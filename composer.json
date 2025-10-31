@@ -1,0 +1,9 @@
+{
+  "name": "lady-byron/arrowchat",
+  "description": "Flarum ↔ ArrowChat bridge (whoami + user info)",
+  "type": "flarum-extension",
+  "license": "MIT",
+  "require": { "flarum/core": "^1.8" },
+  "autoload": { "psr-4": { "LadyByron\\ArrowChat\\": "src/" } },
+  "extra": { "flarum-extension": { "title": "ArrowChat Bridge", "category": "integration" } }
+}
