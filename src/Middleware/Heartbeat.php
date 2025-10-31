@@ -34,16 +34,27 @@ class Heartbeat implements MiddlewareInterface
                 $now     = time();
                 $isAdmin = $actor->isAdmin() ? 1 : 0;
 
-                // 写入/刷新 arrowchat_status（若你的表名带前缀，请改成实际表名）
-                $this->db->table('arrowchat_status')->updateOrInsert(
-                    ['userid' => (int) $actor->id],
-                    [
-                        'session_time' => $now,
-                        'is_admin'     => $isAdmin,
-                        // 下面字段根据你表结构而定：大多数安装允许为 NULL 或有默认值
-                        'status'       => 'available',
-                    ]
-                );
+                // ★ 关键：使用原生 SQL，避免 Laravel 自动追加表前缀
+                try {
+                    // 先尝试更新；没更新到再插入
+                    $updated = $this->db->update(
+                        'UPDATE `arrowchat_status`
+                         SET `session_time` = ?, `is_admin` = ?, `status` = ?
+                         WHERE `userid` = ?',
+                        [$now, $isAdmin, 'available', (int) $actor->id]
+                    );
+
+                    if ($updated === 0) {
+                        $this->db->insert(
+                            'INSERT INTO `arrowchat_status` (`userid`, `session_time`, `is_admin`, `status`)
+                             VALUES (?, ?, ?, ?)',
+                            [(int) $actor->id, $now, $isAdmin, 'available']
+                        );
+                    }
+                } catch (\Throwable $e) {
+                    // 静默失败即可（不影响页面），如需调试可写日志：
+                    // resolve('log')->error('AC heartbeat error: '.$e->getMessage());
+                }
             }
         }
 
